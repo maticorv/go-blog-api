@@ -1,0 +1,8 @@
+basePath: /
+info:
+  contact: {}
+  description: bolg-api
+  title: bolg-api example
+  version: "1.0"
+paths: {}
+swagger: "2.0"
