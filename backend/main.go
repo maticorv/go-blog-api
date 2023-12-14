@@ -4,16 +4,25 @@ package main
 
 import (
 	"blog-api/app/clients/restclient"
+	ah "blog-api/app/v1/albums/handler"
+	as "blog-api/app/v1/albums/service"
+	ch "blog-api/app/v1/comments/handler"
+	cs "blog-api/app/v1/comments/service"
 	ph "blog-api/app/v1/posts/handler"
 	ps "blog-api/app/v1/posts/service"
+	th "blog-api/app/v1/todos/handler"
+	ts "blog-api/app/v1/todos/service"
+	uh "blog-api/app/v1/users/handler"
+	us "blog-api/app/v1/users/service"
 	"context"
+	"log/slog"
+	"net/http"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httplog/v2"
-	"log/slog"
-	"net/http"
-	"time"
 )
 
 // @title bolg-api example
@@ -25,6 +34,14 @@ func main() {
 	restClient := restclient.NewRestClient()
 	postService := ps.NewPostService(restClient)
 	postHandler := ph.NewPostHandler(postService)
+	albumsService := as.NewAlbumService(restClient)
+	albumHandler := ah.NewAlbumHandler(albumsService)
+	commentsService := cs.NewCommentService(restClient)
+	commentHandler := ch.NewCommentHandler(commentsService)
+	todoService := ts.NewTodoService(restClient)
+	todoHandler := th.NewTodoHandler(todoService)
+	userService := us.NewUserService(restClient)
+	userHandler := uh.NewUserHandler(userService)
 	// Logger
 	logger := httplog.NewLogger("blog-api", httplog.Options{
 		LogLevel: slog.LevelDebug,
@@ -71,7 +88,11 @@ func main() {
 	// API version 1.
 	r.Route("/v1", func(r chi.Router) {
 		r.Use(apiVersionCtx("v1"))
+		r.Mount("/albums", albumRouter(albumHandler))
+		r.Mount("/comments", commentRouter(commentHandler))
 		r.Mount("/posts", postRouter(postHandler))
+		r.Mount("/todos", todoRouter(todoHandler))
+		r.Mount("/users", userRouter(userHandler))
 	})
 	http.ListenAndServe(":8000", r)
 }
@@ -85,6 +106,19 @@ func apiVersionCtx(version string) func(next http.Handler) http.Handler {
 	}
 }
 
+func albumRouter(albumHandler *ah.AlbumHandler) http.Handler {
+	r := chi.NewRouter()
+	r.With(paginate).Get("/", albumHandler.GetAlbums)
+	r.Post("/", albumHandler.CreateAlbum)
+	r.Route("/{postID}", func(r chi.Router) {
+		r.Get("/", albumHandler.GetAlbum)
+		r.Put("/", albumHandler.UpdateAlbum)
+		r.Delete("/", albumHandler.DeleteAlbum)
+		r.Patch("/", albumHandler.PatchAlbum)
+	})
+	return r
+}
+
 func postRouter(postHandler *ph.PostHandler) http.Handler {
 	r := chi.NewRouter()
 	r.With(paginate).Get("/", postHandler.GetPosts)
@@ -94,6 +128,44 @@ func postRouter(postHandler *ph.PostHandler) http.Handler {
 		r.Put("/", postHandler.UpdatePost)
 		r.Delete("/", postHandler.DeletePost)
 		r.Patch("/", postHandler.PatchPost)
+	})
+	return r
+}
+
+func commentRouter(commentHandler *ch.CommentHandler) http.Handler {
+	r := chi.NewRouter()
+	r.With(paginate).Get("/", commentHandler.GetComments)
+	r.Post("/", commentHandler.CreateComment)
+	r.Route("/{postID}", func(r chi.Router) {
+		r.Get("/", commentHandler.GetComment)
+		r.Put("/", commentHandler.UpdateComment)
+		r.Delete("/", commentHandler.DeleteComment)
+		r.Patch("/", commentHandler.PatchComment)
+	})
+	return r
+}
+
+func todoRouter(todoHandler *th.TodoHandler) http.Handler {
+	r := chi.NewRouter()
+	r.With(paginate).Get("/", todoHandler.GetTodos)
+	r.Post("/", todoHandler.CreateTodo)
+	r.Route("/{postID}", func(r chi.Router) {
+		r.Get("/", todoHandler.GetTodo)
+		r.Put("/", todoHandler.UpdateTodo)
+		r.Delete("/", todoHandler.DeleteTodo)
+		r.Patch("/", todoHandler.PatchTodo)
+	})
+	return r
+}
+func userRouter(userHandler *uh.UserHandler) http.Handler {
+	r := chi.NewRouter()
+	r.With(paginate).Get("/", userHandler.GetUsers)
+	r.Post("/", userHandler.CreateUser)
+	r.Route("/{postID}", func(r chi.Router) {
+		r.Get("/", userHandler.GetUser)
+		r.Put("/", userHandler.UpdateUser)
+		r.Delete("/", userHandler.DeleteUser)
+		r.Patch("/", userHandler.PatchUser)
 	})
 	return r
 }

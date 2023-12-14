@@ -13,7 +13,7 @@ func (r *Album) Marshal() ([]byte, error) {
 }
 
 type Album struct {
-	UserID int64  `json:"userId"`
-	ID     int64  `json:"id"`
+	UserID int    `json:"userId"`
+	ID     int    `json:"id"`
 	Title  string `json:"title"`
 }

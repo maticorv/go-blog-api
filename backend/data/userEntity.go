@@ -13,7 +13,7 @@ func (r *User) Marshal() ([]byte, error) {
 }
 
 type User struct {
-	ID       int64   `json:"id"`
+	ID       int     `json:"id"`
 	Name     string  `json:"name"`
 	Username string  `json:"username"`
 	Email    string  `json:"email"`
